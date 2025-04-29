@@ -41,7 +41,7 @@ Follow the prompts and fill them with your own preferred fields. Mine looks like
     // Where to add the binary
     "path": "./bin",
     // Dynamic URL pointing to where the compressed binary exists based on version, platform, and the processor type (amd64, arm, and more)
-    "url": "https://github.com/nelwhix/goserve/releases/download/v{{version}}/myBinaryName_{{version}}_{{platform}}_{{arch}}.tar.gz"
+    "url": "https://github.com/user/myrepo/releases/download/v{{version}}/myBinaryName_{{version}}_{{platform}}_{{arch}}.tar.gz"
   }
 }
 
