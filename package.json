@@ -1,6 +1,6 @@
 {
   "name": "@inspectr/go-npm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Distribute and install Go binaries via NPM",
   "main": "index.js",
   "bin": {
