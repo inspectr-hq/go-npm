@@ -8,22 +8,13 @@ const tar         = require('tar');
 const mkdirp      = require('mkdirp');
 const { exec }    = require('child_process');
 const { pipeline }= require('stream/promises');
-const { Readable }= require('stream/web');
+const { Readable }= require('stream');
 
 // Map Node’s process.arch → Go ARCH
-const ARCH_MAPPING = {
-  ia32:   '386',
-  x64:    'amd64',
-  arm:    'arm',
-  arm64:  'arm64'
-};
+const ARCH_MAPPING = { ia32:'386', x64:'amd64', arm:'arm', arm64:'arm64' };
 
-// Map Node’s process.platform → Go OS (only darwin, linux, win32)
-const PLATFORM_MAPPING = {
-  darwin: 'darwin',
-  linux:  'linux',
-  win32:  'windows'
-};
+// Map Node’s process.platform → Go OS (darwin, linux, win32)
+const PLATFORM_MAPPING = { darwin:'darwin', linux:'linux', win32:'windows' };
 
 /**
  * Determine the global npm “bin” directory:
@@ -91,20 +82,32 @@ async function install() {
 
   // Stream through gunzip + tar extractor
   await pipeline(
-    Readable.toNode(res.body),
+    Readable.fromWeb(res.body),
     zlib.createGunzip(),
-    tar.x({ cwd: binPath, strip: 1 })
+    tar.x({ cwd: binPath })
   );
 
-  // Verify the binary exists
-  const extracted = path.join(binPath, binName);
-  if (!fs.existsSync(extracted)) {
+  // Take binary at binPath/binName
+  let extractedPath = path.join(binPath, binName);
+
+  // Scan one level deep
+  if (!fs.existsSync(extractedPath)) {
+    for (let entry of fs.readdirSync(binPath)) {
+      const candidate = path.join(binPath, entry, binName);
+      if (fs.existsSync(candidate)) {
+        extractedPath = candidate;
+        break;
+      }
+    }
+  }
+
+  if (!fs.existsSync(extractedPath)) {
     throw new Error(`Archive missing expected binary: ${binName}`);
   }
 
   // Move into global npm bin
   const dest = await getInstallDir();
-  fs.renameSync(extracted, path.join(dest, binName));
+  fs.renameSync(extractedPath, path.join(dest, binName));
   console.log(`✔ Installed ${binName} to ${dest}`);
 }
 
@@ -122,6 +125,7 @@ async function uninstall() {
   }
 }
 
+/** CLI commands */
 (async () => {
   try {
     const cmd = process.argv[2];
